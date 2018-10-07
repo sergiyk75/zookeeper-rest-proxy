@@ -9,6 +9,9 @@
         </encoder>
     </appender>
 
+    <logger name="org.apache.curator.framework" level="WARN" />
+    <logger name="org.apache.zookeeper" level="WARN" />
+
     <!-- Set the Logging output to warn by default -->
     <root level="info">
         <appender-ref ref="STDOUT"/>

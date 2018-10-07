@@ -16,7 +16,7 @@ class ServiceResponse
      * @param path zookeeper node path
      * @return OK ServiceResponse instance
      */
-    static ServiceResponse Success(String path)
+    static ServiceResponse Ok(String path)
     {
         return new ServiceResponse("OK", path);
     }

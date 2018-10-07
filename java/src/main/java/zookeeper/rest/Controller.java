@@ -1,62 +1,207 @@
 package zookeeper.rest;
 
-import org.apache.commons.cli.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import zookeeper.ZookeeperClient;
+import spark.Request;
+import spark.Response;
+import spark.utils.IOUtils;
 
-import static spark.Spark.*;
+import java.util.*;
 
 /**
  * Zookeeper REST Proxy service controller
  */
-public class Controller
+class Controller
 {
     private static Logger logger = LoggerFactory.getLogger(Controller.class);
+    private final Service service;
 
-    public static void main(String[] args)
+    /**
+     * Constructs Service instance
+     *
+     * @param service zookeeper service api
+     */
+    Controller(Service service)
     {
-        Options options = new Options()
-                .addOption(Option.builder().longOpt("zookeeper").hasArg().desc("Zookeeper servers").build())
-                .addOption(Option.builder().longOpt("listen").hasArg().desc("Address to listen").build());
-
-        CommandLineParser parser = new DefaultParser();
-        CommandLine cmd = null;
-        try
-        {
-            cmd = parser.parse(options, args);
-        }
-        catch (ParseException e)
-        {
-            logger.error("Failed to parse arguments", e);
-            System.exit(1);
-        }
-
-        String[] listen = cmd.getOptionValue("listen", "127.0.0.1:8889").split(":");
-        ipAddress(listen[0]);
-        port(Integer.parseInt(listen[1]));
-
-        exception(Exception.class, (exception, request, response) ->
-        {
-            logger.error("Internal error", exception);
-            response.status(500);
-            response.body("<html><body><h1>500 Internal Error</h1></body></html>");
-        });
-
-        String connectString = cmd.getOptionValue("zookeeper", "127.0.0.1:2181");
-        ZookeeperClient.Factory zkClientFactory = new ZookeeperClient.Factory(connectString);
-        Service service = new Service(zkClientFactory);
-
-        configureRoutes(service);
+        this.service = service;
     }
 
-    private static void configureRoutes(Service service)
+    /**
+     * Returns greeting html document
+     *
+     * @param request  http request
+     * @param response http responce
+     * @return greeting html document
+     */
+    @SuppressWarnings("unused")
+    String greeting(Request request, Response response)
     {
-        get("/", service::greeting);
-        get("/v1/tree/*", service::tree);
-        get("/v1/list/*", service::list);
-        get("/v1/get/*", service::get);
-        put("/v1/set/*", service::set);
-        delete("/v1/delete/*", service::delete);
+        response.type("text/html");
+        try
+        {
+            ClassLoader classLoader = getClass().getClassLoader();
+
+            Properties properties = new Properties();
+            properties.load(classLoader.getResourceAsStream("project.properties"));
+
+            String html = IOUtils.toString(Objects.requireNonNull(classLoader.getResourceAsStream("greeting.html")));
+            return String.format(html, properties.getProperty("version"));
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException("Failed to produce greeting document", e);
+        }
+    }
+
+    /**
+     * Gets zookeeper node child tree
+     *
+     * @param request  http request
+     * @param response http responce
+     * @return service response
+     */
+    String tree(Request request, Response response)
+    {
+        response.type("application/json");
+        String path = getPath(request);
+        logger.debug("Listing node tree");
+
+        Map children;
+        try
+        {
+            children = service.getNodeChildTree(path);
+        }
+        catch (Exception e)
+        {
+            logger.debug("Failed to list node tree: {}", e);
+            return ServiceResponse.Error(path, e.getMessage())
+                                  .toJson();
+        }
+
+        return ServiceResponse.Ok(path)
+                              .children(children)
+                              .toJson();
+    }
+
+    /**
+     * Gets zookeeper node children
+     *
+     * @param request  http request
+     * @param response http responce
+     * @return service response
+     */
+    String list(Request request, Response response)
+    {
+        response.type("application/json");
+        String path = getPath(request);
+        logger.debug("Listing children for {}", path);
+
+        List<String> children;
+        try
+        {
+            children = service.getNodeChildren(path);
+        }
+        catch (Exception e)
+        {
+            logger.debug("Failed to list children for {}: {}", path, e);
+            return ServiceResponse.Error(path, e.getMessage())
+                                  .toJson();
+        }
+
+        return ServiceResponse.Ok(path)
+                              .children(children)
+                              .toJson();
+    }
+
+    /**
+     * Returns zookeeper node data
+     *
+     * @param request  http request
+     * @param response http responce
+     * @return service response
+     */
+    String get(Request request, Response response)
+    {
+        response.type("application/json");
+        String path = getPath(request);
+        logger.debug("Getting data for {}", path);
+
+        byte[] data;
+        try
+        {
+            data = service.getNodeData(path);
+        }
+        catch (Exception e)
+        {
+            logger.debug("Failed to delete {}: {}", path, e);
+            return ServiceResponse.Error(path, e.getMessage())
+                                  .toJson();
+        }
+
+        return ServiceResponse.Ok(path)
+                              .data(data)
+                              .toJson();
+    }
+
+    /**
+     * Sets zookeeper node child tree
+     *
+     * @param request  http request
+     * @param response http responce
+     * @return service response
+     */
+    String set(Request request, Response response)
+    {
+        response.type("application/json");
+        String path = getPath(request);
+        logger.debug("Setting data for {}", path);
+
+        byte[] data = request.bodyAsBytes();
+        try
+        {
+            service.setNodeData(path, data);
+        }
+        catch (Exception e)
+        {
+            logger.debug("Failed to set data for {}: {}", path, e);
+            return ServiceResponse.Error(path, e.getMessage())
+                                  .toJson();
+        }
+
+        return ServiceResponse.Ok(path)
+                              .toJson();
+    }
+
+    /**
+     * Deletes zookeeper node child tree
+     *
+     * @param request  http request
+     * @param response http responce
+     * @return service response
+     */
+    String delete(Request request, Response response)
+    {
+        response.type("application/json");
+        String path = getPath(request);
+        logger.debug("Deleting {}", path);
+
+        try
+        {
+            service.deleteNode(path);
+        }
+        catch (Exception e)
+        {
+            logger.debug("Failed to delete {}: {}", path, e);
+            return ServiceResponse.Error(path, e.getMessage())
+                                  .toJson();
+        }
+
+        return ServiceResponse.Ok(path)
+                              .toJson();
+    }
+
+    private static String getPath(Request request)
+    {
+        return "/" + String.join("/", request.splat());
     }
 }
