@@ -1,0 +1,9 @@
+<h1>Zookeeper REST Proxy Service (%s)</h1>
+<h3>Supported commands</h3>
+<ul>
+    <li><strong>Tree</strong> - List node's child tree:&nbsp;<span style="color: #0000ff;">curl -XGET http://127.0.0.1:8889/v1/tree/one</span></li>
+    <li><strong>List</strong> - List node's children:&nbsp;<span style="color: #0000ff;">curl -XGET http://127.0.0.1:8889/v1/list/one</span></li>
+    <li><strong>Get</strong> - Get node data: <span style="color: #0000ff;">curl -XGET http://127.0.0.1:8889/v1/get/one/two/three</span></li>
+    <li><strong>Set</strong> - Set node data. :&nbsp;<span style="color: #0000ff;">curl -XPUT http://127.0.0.1:8889/v1/set/one/two/three -d 'some-data'</span></li>
+    <li><strong>Delete</strong> - Delete node:&nbsp;<span style="color: #0000ff;">curl -XDELETE http://127.0.0.1:8889/v1/delete/one</span></li>
+</ul>
