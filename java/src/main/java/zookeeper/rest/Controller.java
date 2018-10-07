@@ -3,7 +3,7 @@ package zookeeper.rest;
 import org.apache.commons.cli.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import zookeeper.ZookeeperClientFactory;
+import zookeeper.ZookeeperClient;
 
 import static spark.Spark.*;
 
@@ -44,7 +44,7 @@ public class Controller
         });
 
         String connectString = cmd.getOptionValue("zookeeper", "127.0.0.1:2181");
-        ZookeeperClientFactory zkClientFactory = new ZookeeperClientFactory(connectString);
+        ZookeeperClient.Factory zkClientFactory = new ZookeeperClient.Factory(connectString);
         Service service = new Service(zkClientFactory);
 
         configureRoutes(service);

@@ -6,7 +6,6 @@ import spark.Request;
 import spark.Response;
 import spark.utils.IOUtils;
 import zookeeper.ZookeeperClient;
-import zookeeper.ZookeeperClientFactory;
 
 import java.util.*;
 
@@ -15,16 +14,16 @@ import java.util.*;
  */
 class Service
 {
-    private static Logger logger = LoggerFactory.getLogger(Controller.class);
+    private static Logger logger = LoggerFactory.getLogger(Service.class);
 
-    private ZookeeperClientFactory zkClientFactory;
+    private ZookeeperClient.Factory zkClientFactory;
 
     /**
      * Constructs Service instance
      *
      * @param zkClientFactory zookeeper client factory
      */
-    Service(ZookeeperClientFactory zkClientFactory)
+    Service(ZookeeperClient.Factory zkClientFactory)
     {
         this.zkClientFactory = zkClientFactory;
     }
@@ -67,7 +66,7 @@ class Service
     {
         response.type("application/json");
         String path = getPath(request);
-        logger.debug("Listing all nodes");
+        logger.debug("Listing node tree");
 
         Map children;
         try (ZookeeperClient zkClient = zkClientFactory.create())
@@ -76,7 +75,7 @@ class Service
         }
         catch (Exception e)
         {
-            logger.debug("Failed to list all nodes: {}", e);
+            logger.debug("Failed to list node tree: {}", e);
             return ServiceResponse.Error(path, e.getMessage())
                                   .toJson();
         }

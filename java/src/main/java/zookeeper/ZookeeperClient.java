@@ -11,6 +11,34 @@ import java.util.List;
  */
 public class ZookeeperClient implements AutoCloseable
 {
+    /**
+     * Zookeeper client factory
+     */
+    public static class Factory
+    {
+        private String connectString;
+
+        /**
+         * Constructs zookeeper client factory instance
+         *
+         * @param connectString zookeeper connection string. Example 'zoo1:2181,zoo2:2181'
+         */
+        public Factory(String connectString)
+        {
+            this.connectString = connectString;
+        }
+
+        /**
+         * Creates zookeeper client
+         *
+         * @return zookeeper client
+         */
+        public ZookeeperClient create()
+        {
+            return new ZookeeperClient(connectString);
+        }
+    }
+
     private static final int CONNECTION_TIMEOUT_MS = 3000;
     private static final int SESSION_TIMEOUT_MS = 10000;
     private static final int RETRY_TIMES = 1;
@@ -20,9 +48,10 @@ public class ZookeeperClient implements AutoCloseable
 
     /**
      * Constructs zookeeper client instance
+     *
      * @param connectString zookeeper connection string. Example 'zoo1:2181,zoo2:2181'
      */
-    ZookeeperClient(String connectString)
+    private ZookeeperClient(String connectString)
     {
         curator = CuratorFrameworkFactory.newClient(
                 connectString,
@@ -34,6 +63,7 @@ public class ZookeeperClient implements AutoCloseable
 
     /**
      * Gets data for specified zookeeper node
+     *
      * @param path zookeeper node path
      * @return zookeeper node data
      * @throws Exception throws KeeperErrorCode exception
@@ -47,7 +77,8 @@ public class ZookeeperClient implements AutoCloseable
     /**
      * Sets data for specified zookeeper node
      * Parent nodes are auto created as needed
-     * @param path zookeeper node path
+     *
+     * @param path  zookeeper node path
      * @param bytes zookeeper node data
      * @throws Exception throws KeeperErrorCode exception
      */
@@ -61,6 +92,7 @@ public class ZookeeperClient implements AutoCloseable
 
     /**
      * Deletes specifed nodes and its children tree
+     *
      * @param path zookeeper node path
      * @throws Exception throws KeeperErrorCode exception
      */
@@ -73,6 +105,7 @@ public class ZookeeperClient implements AutoCloseable
 
     /**
      * Lists child nodes for specifed zookeeper node
+     *
      * @param path zookeeper node path
      * @return child nodes
      * @throws Exception throws KeeperErrorCode exception
